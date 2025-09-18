@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amazon Vendor Central Shipment Upload Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #232f3e 0%, #37475a 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .amazon-logo {
+            width: 30px;
+            height: 30px;
+            background: #ff9900;
+            border-radius: 5px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .main-content {
+            padding: 30px;
+        }
+        
+        .step {
+            margin-bottom: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        
+        .step:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+        }
+        
+        .step-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 15px;
+        }
+        
+        .step-number {
+            width: 35px;
+            height: 35px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .step-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .warehouse-selection {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .warehouse-option {
+            flex: 1;
+            padding: 20px;
+            border: 3px solid #e9ecef;
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .warehouse-option:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+        
+        .warehouse-option.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: scale(1.05);
+        }
+        
+        .warehouse-option h3 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .warehouse-option p {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .file-upload-area {
+            border: 3px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .file-upload-area:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        
+        .file-upload-area.drag-over {
+            border-color: #667eea;
+            background: #f0f4ff;
+            transform: scale(1.02);
+        }
+        
+        .file-upload-area.file-loaded {
+            border-color: #28a745;
+            background: #f0fff4;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+        
+        .upload-text {
+            font-size: 16px;
+            color: #495057;
+            margin-bottom: 10px;
+        }
+        
+        .upload-subtext {
+            font-size: 13px;
+            color: #6c757d;
+        }
+        
+        .file-info {
+            margin-top: 15px;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .file-name {
+            font-weight: 600;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .file-size {
+            color: #6c757d;
+            font-size: 13px;
+        }
+        
+        .remove-file {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .remove-file:hover {
+            background: #c82333;
+            transform: scale(1.05);
+        }
+        
+        .process-button {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .process-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .process-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .processing {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .processing-text {
+            font-size: 18px;
+            color: #495057;
+            margin-bottom: 10px;
+        }
+        
+        .processing-subtext {
+            font-size: 14px;
+            color: #6c757d;
+        }
+        
+        .results {
+            display: none;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            margin-top: 30px;
+        }
+        
+        .success-message {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .success-icon {
+            font-size: 36px;
+            color: #28a745;
+        }
+        
+        .success-text {
+            flex: 1;
+        }
+        
+        .success-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #155724;
+            margin-bottom: 5px;
+        }
+        
+        .success-detail {
+            font-size: 14px;
+            color: #155724;
+        }
+        
+        .download-button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .download-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(40, 167, 69, 0.3);
+        }
+        
+        .error-list, .warning-list {
+            margin-top: 20px;
+        }
+        
+        .error-item, .warning-item {
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            display: flex;
+            align-items: start;
+            gap: 10px;
+            font-size: 14px;
+        }
+        
+        .error-item {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .warning-item {
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+        }
+        
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            font-size: 13px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        
+        .validation-errors {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff3cd;
+            border: 2px solid #ffeeba;
+            border-radius: 8px;
+        }
+        
+        .validation-errors h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .validation-error-item {
+            padding: 8px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <span class="amazon-logo">A</span>
+                Amazon Vendor Central Shipment Upload Generator
+            </h1>
+            <p>Automate your shipment creation process with intelligent PO matching</p>
+        </div>
+        
+        <div class="main-content">
+            <!-- Step 1: Warehouse Selection -->
+            <div class="step">
+                <div class="step-header">
+                    <div class="step-number">1</div>
+                    <div class="step-title">Select Warehouse</div>
+                </div>
+                <div class="warehouse-selection">
+                    <div class="warehouse-option" onclick="selectWarehouse('UNIS')" id="unis-option">
+                        <h3>UNIS</h3>
+                        <p>Buena Park, CA</p>
+                    </div>
+                    <div class="warehouse-option" onclick="selectWarehouse('Encore')" id="encore-option">
+                        <h3>Encore</h3>
+                        <p>Oklahoma City, OK</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Step 2: Upload Shipment Template -->
+            <div class="step">
+                <div class="step-header">
+                    <div class="step-number">2</div>
+                    <div class="step-title">Upload Shipment Template</div>
+                </div>
+                <div class="file-upload-area" id="shipment-upload" onclick="document.getElementById('shipment-file').click()">
+                    <input type="file" id="shipment-file" class="file-input" accept=".xlsx,.xls">
+                    <div class="upload-icon">📊</div>
+                    <div class="upload-text">Click to upload or drag and drop</div>
+                    <div class="upload-subtext">Shipment template from Vendor Central (.xlsx)</div>
+                </div>
+            </div>
+            
+            <!-- Step 3: Upload PO File -->
+            <div class="step">
+                <div class="step-header">
+                    <div class="step-number">3</div>
+                    <div class="step-title">Upload PO Upload File</div>
+                </div>
+                <div class="file-upload-area" id="po-upload" onclick="document.getElementById('po-file').click()">
+                    <input type="file" id="po-file" class="file-input" accept=".xlsx,.xls">
+                    <div class="upload-icon">📋</div>
+                    <div class="upload-text">Click to upload or drag and drop</div>
+                    <div class="upload-subtext">PO Upload file with accept unis/encore tabs (.xlsx)</div>
+                </div>
+            </div>
+            
+            <!-- Process Button -->
+            <button class="process-button" onclick="processFiles()" disabled id="process-btn">
+                <span>🚀</span>
+                <span>Process Files</span>
+            </button>
+            
+            <!-- Processing Animation -->
+            <div class="processing" id="processing">
+                <div class="spinner"></div>
+                <div class="processing-text">Processing your files...</div>
+                <div class="processing-subtext">Matching POs, calculating dates, and generating shipments</div>
+            </div>
+            
+            <!-- Results Section -->
+            <div class="results" id="results">
+                <div class="success-message">
+                    <div class="success-icon">✅</div>
+                    <div class="success-text">
+                        <div class="success-title">File Generated Successfully!</div>
+                        <div class="success-detail" id="result-detail">Your shipment upload file is ready for Vendor Central</div>
+                    </div>
+                </div>
+                
+                <div class="summary-stats" id="summary-stats"></div>
+                
+                <div id="validation-errors-display"></div>
+                
+                <div class="error-list" id="error-list"></div>
+                <div class="warning-list" id="warning-list"></div>
+                
+                <button class="download-button" onclick="downloadFile()">
+                    <span>⬇️</span>
+                    <span>Download Shipment File</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let selectedWarehouse = null;
+        let shipmentWorkbook = null;
+        let poWorkbook = null;
+        let outputWorkbook = null;
+        let outputFileName = '';
+        let validationErrors = [];
+        
+        // Warehouse selection
+        function selectWarehouse(warehouse) {
+            selectedWarehouse = warehouse;
+            document.querySelectorAll('.warehouse-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            document.getElementById(`${warehouse.toLowerCase()}-option`).classList.add('selected');
+            checkReadyToProcess();
+        }
+        
+        // File upload handlers
+        document.getElementById('shipment-file').addEventListener('change', function(e) {
+            handleFileUpload(e.target.files[0], 'shipment');
+        });
+        
+        document.getElementById('po-file').addEventListener('change', function(e) {
+            handleFileUpload(e.target.files[0], 'po');
+        });
+        
+        // Drag and drop handlers
+        ['shipment-upload', 'po-upload'].forEach(id => {
+            const element = document.getElementById(id);
+            
+            element.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                element.classList.add('drag-over');
+            });
+            
+            element.addEventListener('dragleave', () => {
+                element.classList.remove('drag-over');
+            });
+            
+            element.addEventListener('drop', (e) => {
+                e.preventDefault();
+                element.classList.remove('drag-over');
+                const file = e.dataTransfer.files[0];
+                const type = id.includes('shipment') ? 'shipment' : 'po';
+                handleFileUpload(file, type);
+            });
+        });
+        
+        function handleFileUpload(file, type) {
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                // Read with formula preservation
+                const workbook = XLSX.read(data, {
+                    type: 'array', 
+                    cellFormulas: true, 
+                    cellDates: true,
+                    cellNF: true,
+                    cellStyles: true,
+                    sheetStubs: true,
+                    dateNF: 'd-mmm'
+                });
+                
+                if (type === 'shipment') {
+                    shipmentWorkbook = workbook;
+                    updateUploadArea('shipment-upload', file.name, file.size);
+                } else {
+                    poWorkbook = workbook;
+                    updateUploadArea('po-upload', file.name, file.size);
+                }
+                
+                checkReadyToProcess();
+            };
+            reader.readAsArrayBuffer(file);
+        }
+        
+        function updateUploadArea(areaId, fileName, fileSize) {
+            const area = document.getElementById(areaId);
+            area.classList.add('file-loaded');
+            
+            const sizeKB = (fileSize / 1024).toFixed(1);
+            area.innerHTML = `
+                <div class="upload-icon">✅</div>
+                <div class="file-info">
+                    <div>
+                        <div class="file-name">📄 ${fileName}</div>
+                        <div class="file-size">${sizeKB} KB</div>
+                    </div>
+                    <button class="remove-file" onclick="removeFile('${areaId}')">Remove</button>
+                </div>
+            `;
+        }
+        
+        function removeFile(areaId) {
+            const area = document.getElementById(areaId);
+            area.classList.remove('file-loaded');
+            
+            if (areaId === 'shipment-upload') {
+                shipmentWorkbook = null;
+                document.getElementById('shipment-file').value = '';
+                area.innerHTML = `
+                    <div class="upload-icon">📊</div>
+                    <div class="upload-text">Click to upload or drag and drop</div>
+                    <div class="upload-subtext">Shipment template from Vendor Central (.xlsx)</div>
+                `;
+            } else {
+                poWorkbook = null;
+                document.getElementById('po-file').value = '';
+                area.innerHTML = `
+                    <div class="upload-icon">📋</div>
+                    <div class="upload-text">Click to upload or drag and drop</div>
+                    <div class="upload-subtext">PO Upload file with accept unis/encore tabs (.xlsx)</div>
+                `;
+            }
+            
+            checkReadyToProcess();
+        }
+        
+        function checkReadyToProcess() {
+            const btn = document.getElementById('process-btn');
+            if (selectedWarehouse && shipmentWorkbook && poWorkbook) {
+                btn.disabled = false;
+            } else {
+                btn.disabled = true;
+            }
+        }
+        
+        // Convert JavaScript Date to Excel serial date
+        function dateToExcelSerial(date) {
+            const epoch = new Date(1899, 11, 30);
+            const msPerDay = 86400000;
+            return (date - epoch) / msPerDay;
+        }
+        
+        // Convert Excel serial date to JavaScript Date
+        function excelSerialToDate(serial) {
+            const epoch = new Date(1899, 11, 30);
+            const msPerDay = 86400000;
+            return new Date(epoch.getTime() + serial * msPerDay);
+        }
+        
+        // Parse date from various formats
+        function parseDate(dateValue) {
+            if (!dateValue) return null;
+            
+            // If it's already a Date object
+            if (dateValue instanceof Date) return dateValue;
+            
+            // If it's a number (Excel serial)
+            if (typeof dateValue === 'number') {
+                return excelSerialToDate(dateValue);
+            }
+            
+            // If it's a string, try to parse it
+            if (typeof dateValue === 'string') {
+                const parsed = new Date(dateValue);
+                if (!isNaN(parsed)) return parsed;
+            }
+            
+            return null;
+        }
+        
+        // Calculate pickup date based on order date - FIXED LOGIC
+        function calculatePickupDate(orderDate) {
+            if (!orderDate) return null;
+            
+            const date = parseDate(orderDate);
+            if (!date) return null;
+            
+            const dayOfWeek = date.getDay();
+            let pickupDate = new Date(date);
+            
+            if (dayOfWeek === 1 || dayOfWeek === 2) {
+                // Monday or Tuesday -> Following Thursday
+                const daysUntilThursday = 4 - dayOfWeek;
+                pickupDate.setDate(date.getDate() + daysUntilThursday);
+            } else if (dayOfWeek === 3 || dayOfWeek === 4 || dayOfWeek === 5) {
+                // Wednesday, Thursday, Friday -> Following Monday
+                const daysUntilMonday = 8 - dayOfWeek;
+                pickupDate.setDate(date.getDate() + daysUntilMonday);
+            } else {
+                // Saturday (6) or Sunday (0) -> Following Monday
+                const daysUntilMonday = dayOfWeek === 0 ? 1 : 2;
+                pickupDate.setDate(date.getDate() + daysUntilMonday);
+            }
+            
+            return pickupDate;
+        }
+        
+        // Calculate majority pickup date for an FC
+        function calculateMajorityPickupDate(fcDateData) {
+            if (!fcDateData || fcDateData.length === 0) return null;
+            
+            const pickupDateCounts = {};
+            
+            fcDateData.forEach(item => {
+                const pickupDate = calculatePickupDate(item.orderDate);
+                if (pickupDate) {
+                    const dateKey = pickupDate.toDateString();
+                    if (!pickupDateCounts[dateKey]) {
+                        pickupDateCounts[dateKey] = { date: pickupDate, quantity: 0 };
+                    }
+                    pickupDateCounts[dateKey].quantity += item.quantity;
+                }
+            });
+            
+            // Find the pickup date with the most quantity
+            let majorityDate = null;
+            let maxQty = 0;
+            
+            for (const dateData of Object.values(pickupDateCounts)) {
+                if (dateData.quantity > maxQty) {
+                    maxQty = dateData.quantity;
+                    majorityDate = dateData.date;
+                }
+            }
+            
+            return majorityDate;
+        }
+        
+        // Check validation errors after processing
+        function checkValidationErrors(workbook) {
+            const errors = [];
+            const detailsSheet = workbook.Sheets['Shipment details'];
+            
+            if (!detailsSheet) return errors;
+            
+            // Get shipment count by checking row 2 (Shipment names)
+            let shipmentCount = 0;
+            for (let col = 2; col < 50; col++) { // Check columns C to AX
+                const cellAddr = XLSX.utils.encode_cell({ r: 1, c: col });
+                if (detailsSheet[cellAddr] && detailsSheet[cellAddr].v) {
+                    shipmentCount++;
+                } else {
+                    break;
+                }
+            }
+            
+            // Check validation cells for each shipment
+            const validationRows = [
+                { row: 15, label: "Destination" },
+                { row: 16, label: "Requested pick up date" },
+                { row: 17, label: "Ship Window" },
+                { row: 18, label: "Pallet capacity" },
+                { row: 19, label: "Volume capacity" },
+                { row: 20, label: "Weight capacity" },
+                { row: 21, label: "Cartons" }
+            ];
+            
+            for (let shipNum = 1; shipNum <= shipmentCount; shipNum++) {
+                const col = 2 + shipNum - 1; // Column C is index 2
+                const shipmentName = detailsSheet[XLSX.utils.encode_cell({ r: 1, c: col })]?.v || `Shipment ${shipNum}`;
+                
+                validationRows.forEach(({ row, label }) => {
+                    const cellAddr = XLSX.utils.encode_cell({ r: row, c: col });
+                    const cell = detailsSheet[cellAddr];
+                    
+                    if (cell && cell.v && cell.v !== "OK") {
+                        errors.push({
+                            shipment: shipmentName,
+                            validation: label,
+                            message: cell.v
+                        });
+                    }
+                });
+            }
+            
+            return errors;
+        }
+        
+        function processFiles() {
+            document.getElementById('processing').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            
+            setTimeout(() => {
+                try {
+                    const results = performProcessing();
+                    displayResults(results);
+                } catch (error) {
+                    alert('Error processing files: ' + error.message);
+                    console.error(error);
+                    document.getElementById('processing').style.display = 'none';
+                }
+            }, 100);
+        }
+        
+        function performProcessing() {
+            const errors = [];
+            const warnings = [];
+            const deletedRows = [];
+            const stats = {
+                itemsProcessed: 0,
+                rowsDeleted: 0,
+                shipmentsCreated: 0,
+                fcsProcessed: new Set(),
+                totalQuantity: 0
+            };
+            
+            // Create output workbook by cloning the shipment workbook
+            outputWorkbook = XLSX.utils.book_new();
+            
+            // Process each sheet with formula preservation
+            for (const sheetName of shipmentWorkbook.SheetNames) {
+                const sourceSheet = shipmentWorkbook.Sheets[sheetName];
+                
+                // Create a deep copy of the sheet to preserve formulas
+                const newSheet = {};
+                
+                // Copy all properties including the sheet range
+                Object.keys(sourceSheet).forEach(key => {
+                    if (key[0] === '!') {
+                        // Copy sheet metadata
+                        newSheet[key] = sourceSheet[key];
+                    } else {
+                        // Copy cell data including formulas
+                        const cell = sourceSheet[key];
+                        newSheet[key] = { ...cell };
+                        
+                        // Preserve formula if it exists
+                        if (cell.f) {
+                            newSheet[key].f = cell.f;
+                        }
+                    }
+                });
+                
+                XLSX.utils.book_append_sheet(outputWorkbook, newSheet, sheetName);
+            }
+            
+            // Get the appropriate PO sheet based on warehouse selection
+            const poSheetName = selectedWarehouse === 'UNIS' ? 'accept unis' : 'accept encore';
+            const pivotSheetName = selectedWarehouse === 'UNIS' ? 'unis pivot' : 'encore pivot';
+            
+            // Check if required sheets exist
+            if (!poWorkbook.Sheets[poSheetName]) {
+                errors.push(`Required sheet "${poSheetName}" not found in PO upload file`);
+                return { errors, warnings, stats, deletedRows };
+            }
+            
+            if (!poWorkbook.Sheets[pivotSheetName]) {
+                errors.push(`Required sheet "${pivotSheetName}" not found in PO upload file`);
+                return { errors, warnings, stats, deletedRows };
+            }
+            
+            // Convert PO sheet to JSON for processing
+            const poData = XLSX.utils.sheet_to_json(poWorkbook.Sheets[poSheetName], {raw: true});
+            const pivotData = XLSX.utils.sheet_to_json(poWorkbook.Sheets[pivotSheetName], {raw: true});
+            
+            // Create lookup maps
+            const poLookup = {};
+            const fcDateMap = {};
+            
+            poData.forEach(row => {
+                const poAsin = row['po-asin'];
+                if (poAsin) {
+                    poLookup[poAsin] = {
+                        quantity: parseFloat(row['Total Qty to Fulfill']) || 0,
+                        fc: row['Fulfillment Center'],
+                        orderDate: row['Order Date']
+                    };
+                    
+                    // Track order dates by FC for pickup date calculation
+                    if (!fcDateMap[row['Fulfillment Center']]) {
+                        fcDateMap[row['Fulfillment Center']] = [];
+                    }
+                    fcDateMap[row['Fulfillment Center']].push({
+                        orderDate: row['Order Date'],
+                        quantity: parseFloat(row['Total Qty to Fulfill']) || 0
+                    });
+                }
+            });
+            
+            // Create pivot lookup for logistics data
+            const pivotLookup = {};
+            pivotData.forEach(row => {
+                const fc = row['Row Labels'];
+                if (fc) {
+                    pivotLookup[fc] = {
+                        cartons: Math.round(parseFloat(row['Sum of CARTONS']) || 0),
+                        weight: Math.round(parseFloat(row['Sum of WT']) || 0),
+                        volume: Math.round(parseFloat(row['Sum of VOL']) || 0),
+                        pallets: Math.round(parseFloat(row['Sum of PALLETS']) || 0)
+                    };
+                }
+            });
+            
+            // Process Items to ship sheet
+            const itemsSheet = outputWorkbook.Sheets['Items to ship'];
+            
+            // Create FC to shipment number mapping
+            const fcShipmentMap = {};
+            let nextShipmentNum = 1;
+            
+            // First, analyze the data to determine FC groupings
+            const itemsData = [];
+            let maxRow = 0;
+            
+            // Find the actual data range
+            for (let row = 0; row < 10000; row++) {
+                const poCell = itemsSheet[XLSX.utils.encode_cell({ r: row, c: 0 })]; // Column A
+                if (poCell && poCell.v) {
+                    maxRow = row;
+                }
+            }
+            
+            // Process rows starting from row 4 (index 3)
+            const rowsToKeep = [];
+            const rowsToDelete = [];
+            
+            for (let row = 3; row <= maxRow; row++) {
+                const poCell = itemsSheet[XLSX.utils.encode_cell({ r: row, c: 0 })]; // PO Number
+                const asinCell = itemsSheet[XLSX.utils.encode_cell({ r: row, c: 7 })]; // ASIN
+                
+                if (!poCell || !poCell.v) continue;
+                
+                const poNumber = poCell.v;
+                const asin = asinCell ? asinCell.v : '';
+                const poAsinKey = poNumber + asin;
+                
+                if (poLookup[poAsinKey]) {
+                    // Keep this row and track FC for shipment assignment
+                    const poInfo = poLookup[poAsinKey];
+                    const fc = poInfo.fc;
+                    
+                    if (!fcShipmentMap[fc]) {
+                        fcShipmentMap[fc] = nextShipmentNum++;
+                        stats.fcsProcessed.add(fc);
+                    }
+                    
+                    rowsToKeep.push({
+                        row: row,
+                        fc: fc,
+                        shipmentNum: fcShipmentMap[fc],
+                        quantity: poInfo.quantity
+                    });
+                    
+                    stats.itemsProcessed++;
+                    stats.totalQuantity += poInfo.quantity;
+                } else {
+                    // Delete this row
+                    rowsToDelete.push({ row: row, po: poNumber, asin: asin });
+                    deletedRows.push(`PO: ${poNumber}, ASIN: ${asin}`);
+                    stats.rowsDeleted++;
+                }
+            }
+            
+            stats.shipmentsCreated = Object.keys(fcShipmentMap).length;
+            
+            // Now update the sheet by clearing shipment columns and setting new values
+            rowsToKeep.forEach(({ row, shipmentNum, quantity }) => {
+                // Clear any existing quantities in shipment columns (13-48, columns N-AW)
+                for (let col = 13; col <= 48; col++) {
+                    const cellAddr = XLSX.utils.encode_cell({ r: row, c: col });
+                    if (itemsSheet[cellAddr]) {
+                        delete itemsSheet[cellAddr];
+                    }
+                }
+                
+                // Set the new quantity in the appropriate shipment column
+                const shipmentCol = 13 + shipmentNum - 1;
+                const cellAddr = XLSX.utils.encode_cell({ r: row, c: shipmentCol });
+                itemsSheet[cellAddr] = { t: 'n', v: quantity };
+            });
+            
+            // Delete rows that aren't in PO upload
+            // We need to rebuild the sheet without the deleted rows
+            if (rowsToDelete.length > 0) {
+                const allCells = {};
+                const keepRowMapping = new Map();
+                let newRow = 0;
+                
+                // Keep header rows (0-2)
+                for (let r = 0; r < 3; r++) {
+                    for (let c = 0; c < 100; c++) {
+                        const addr = XLSX.utils.encode_cell({ r: r, c: c });
+                        if (itemsSheet[addr]) {
+                            const newAddr = XLSX.utils.encode_cell({ r: newRow, c: c });
+                            allCells[newAddr] = itemsSheet[addr];
+                        }
+                    }
+                    newRow++;
+                }
+                
+                // Process data rows
+                const deletedRowNumbers = new Set(rowsToDelete.map(d => d.row));
+                for (let r = 3; r <= maxRow; r++) {
+                    if (!deletedRowNumbers.has(r)) {
+                        // Keep this row
+                        for (let c = 0; c < 100; c++) {
+                            const addr = XLSX.utils.encode_cell({ r: r, c: c });
+                            if (itemsSheet[addr]) {
+                                const newAddr = XLSX.utils.encode_cell({ r: newRow, c: c });
+                                allCells[newAddr] = itemsSheet[addr];
+                            }
+                        }
+                        keepRowMapping.set(r, newRow);
+                        newRow++;
+                    }
+                }
+                
+                // Clear the sheet and rebuild with kept rows
+                Object.keys(itemsSheet).forEach(key => {
+                    if (key[0] !== '!') delete itemsSheet[key];
+                });
+                
+                Object.entries(allCells).forEach(([addr, cell]) => {
+                    itemsSheet[addr] = cell;
+                });
+                
+                // Update the sheet range
+                if (newRow > 0) {
+                    itemsSheet['!ref'] = `A1:AZ${newRow}`;
+                }
+            }
+            
+            // Process Shipment details sheet
+            const detailsSheet = outputWorkbook.Sheets['Shipment details'];
+            
+            // Set pickup location based on warehouse
+            const pickupLocation = selectedWarehouse === 'UNIS' 
+                ? '6800 Valley View St. Dock 18,Buena Park,CA 90620'
+                : '3815 N Santa Fe Ave Dock 3,Oklahoma City,OK 73118';
+            
+            // Update shipment details for each FC
+            Object.entries(fcShipmentMap).forEach(([fc, shipmentNum]) => {
+                const col = 2 + shipmentNum - 1; // Column C is index 2
+                
+                // Only update data cells, not formula cells
+                
+                // Row 5 (index 4): Requested pick up date
+                const pickupDate = calculateMajorityPickupDate(fcDateMap[fc]);
+                if (pickupDate) {
+                    const cellAddr = XLSX.utils.encode_cell({ r: 4, c: col });
+                    const serialDate = dateToExcelSerial(pickupDate);
+                    detailsSheet[cellAddr] = { 
+                        t: 'n', 
+                        v: serialDate,
+                        z: 'd-mmm',
+                        w: pickupDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })
+                    };
+                }
+                
+                // Row 6 (index 5): Pick up location
+                const locAddr = XLSX.utils.encode_cell({ r: 5, c: col });
+                detailsSheet[locAddr] = { t: 's', v: pickupLocation };
+                
+                // Get logistics data from pivot
+                if (pivotLookup[fc]) {
+                    const logistics = pivotLookup[fc];
+                    
+                    // Row 7 (index 6): Stacked pallets (always 0)
+                    const stackedAddr = XLSX.utils.encode_cell({ r: 6, c: col });
+                    detailsSheet[stackedAddr] = { t: 'n', v: 0 };
+                    
+                    // Row 8 (index 7): Unstacked pallets
+                    const unstackedAddr = XLSX.utils.encode_cell({ r: 7, c: col });
+                    detailsSheet[unstackedAddr] = { t: 'n', v: logistics.pallets };
+                    
+                    // Row 9 (index 8): Cartons
+                    const cartonsAddr = XLSX.utils.encode_cell({ r: 8, c: col });
+                    detailsSheet[cartonsAddr] = { t: 'n', v: logistics.cartons };
+                    
+                    // Row 10 (index 9): Total weight
+                    const weightAddr = XLSX.utils.encode_cell({ r: 9, c: col });
+                    detailsSheet[weightAddr] = { t: 'n', v: logistics.weight };
+                    
+                    // Row 11 (index 10): Total volume
+                    const volumeAddr = XLSX.utils.encode_cell({ r: 10, c: col });
+                    detailsSheet[volumeAddr] = { t: 'n', v: logistics.volume };
+                } else {
+                    warnings.push(`No logistics data found for FC: ${fc} in pivot table`);
+                    
+                    // Set default values
+                    detailsSheet[XLSX.utils.encode_cell({ r: 6, c: col })] = { t: 'n', v: 0 };
+                    detailsSheet[XLSX.utils.encode_cell({ r: 7, c: col })] = { t: 'n', v: 0 };
+                    detailsSheet[XLSX.utils.encode_cell({ r: 8, c: col })] = { t: 'n', v: 0 };
+                    detailsSheet[XLSX.utils.encode_cell({ r: 9, c: col })] = { t: 'n', v: 0 };
+                    detailsSheet[XLSX.utils.encode_cell({ r: 10, c: col })] = { t: 'n', v: 0 };
+                }
+            });
+            
+            // Check validation errors
+            validationErrors = checkValidationErrors(outputWorkbook);
+            
+            // Generate output filename
+            const today = new Date();
+            const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+            outputFileName = `Generated Shipment Create Upload for ${selectedWarehouse}_${dateStr}.xlsx`;
+            
+            return { errors, warnings, stats, deletedRows, validationErrors };
+        }
+        
+        function displayResults(results) {
+            document.getElementById('processing').style.display = 'none';
+            document.getElementById('results').style.display = 'block';
+            
+            // Update result detail
+            const detail = document.getElementById('result-detail');
+            detail.textContent = `Generated ${results.stats.shipmentsCreated} shipments for ${results.stats.fcsProcessed.size} fulfillment centers`;
+            
+            // Display statistics
+            const statsHtml = `
+                <div class="stat-card">
+                    <div class="stat-value">${results.stats.itemsProcessed}</div>
+                    <div class="stat-label">Items Processed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${results.stats.totalQuantity}</div>
+                    <div class="stat-label">Total Units</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${results.stats.shipmentsCreated}</div>
+                    <div class="stat-label">Shipments Created</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${results.stats.rowsDeleted}</div>
+                    <div class="stat-label">Rows Deleted</div>
+                </div>
+            `;
+            document.getElementById('summary-stats').innerHTML = statsHtml;
+            
+            // Display validation errors if any
+            if (results.validationErrors && results.validationErrors.length > 0) {
+                let validationHtml = '<div class="validation-errors">';
+                validationHtml += '<h4>⚠️ Validation Issues Found</h4>';
+                
+                results.validationErrors.forEach(error => {
+                    validationHtml += `
+                        <div class="validation-error-item">
+                            <strong>${error.shipment}</strong> - ${error.validation}: ${error.message}
+                        </div>
+                    `;
+                });
+                
+                validationHtml += '</div>';
+                document.getElementById('validation-errors-display').innerHTML = validationHtml;
+            } else {
+                document.getElementById('validation-errors-display').innerHTML = '';
+            }
+            
+            // Get the PO sheet name for display
+            const poSheetName = selectedWarehouse === 'UNIS' ? 'accept unis' : 'accept encore';
+            
+            // Display deleted rows
+            const errorList = document.getElementById('error-list');
+            if (results.deletedRows.length > 0) {
+                let errorHtml = `<h4 style="color: #721c24; margin-bottom: 10px;">🗑️ Deleted Rows (Not Found in ${poSheetName})</h4>`;
+                
+                // Show first 10 deleted rows
+                const displayRows = results.deletedRows.slice(0, 10);
+                displayRows.forEach(row => {
+                    errorHtml += `
+                        <div class="error-item">
+                            <span>❌</span>
+                            <span>Deleted: ${row} - not found in ${poSheetName}</span>
+                        </div>
+                    `;
+                });
+                
+                // If more than 10, show summary
+                if (results.deletedRows.length > 10) {
+                    errorHtml += `
+                        <div class="error-item">
+                            <span>📊</span>
+                            <span>... and ${results.deletedRows.length - 10} more rows deleted</span>
+                        </div>
+                    `;
+                }
+                
+                errorList.innerHTML = errorHtml;
+            } else {
+                errorList.innerHTML = '';
+            }
+            
+            // Display warnings
+            const warningList = document.getElementById('warning-list');
+            if (results.warnings.length > 0) {
+                let warningHtml = '<h4 style="color: #856404; margin-bottom: 10px;">⚠️ Warnings</h4>';
+                results.warnings.forEach(warning => {
+                    warningHtml += `
+                        <div class="warning-item">
+                            <span>⚠️</span>
+                            <span>${warning}</span>
+                        </div>
+                    `;
+                });
+                warningList.innerHTML = warningHtml;
+            } else {
+                warningList.innerHTML = '';
+            }
+            
+            // Display any processing errors
+            if (results.errors.length > 0) {
+                let errorHtml = '<h4 style="color: #721c24; margin-bottom: 10px;">❗ Processing Errors</h4>';
+                results.errors.forEach(error => {
+                    errorHtml += `
+                        <div class="error-item">
+                            <span>❗</span>
+                            <span>${error}</span>
+                        </div>
+                    `;
+                });
+                errorList.innerHTML = errorHtml + errorList.innerHTML;
+            }
+        }
+        
+        function downloadFile() {
+            if (!outputWorkbook) {
+                alert('No file to download');
+                return;
+            }
+            
+            // Write the workbook to binary with proper options
+            const wbout = XLSX.write(outputWorkbook, {
+                bookType: 'xlsx',
+                type: 'binary',
+                cellFormulas: true,
+                cellDates: true
+            });
+            
+            // Convert to blob
+            function s2ab(s) {
+                const buf = new ArrayBuffer(s.length);
+                const view = new Uint8Array(buf);
+                for (let i = 0; i < s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
+                return buf;
+            }
+            
+            const blob = new Blob([s2ab(wbout)], {type: 'application/octet-stream'});
+            
+            // Create download link
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = outputFileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
