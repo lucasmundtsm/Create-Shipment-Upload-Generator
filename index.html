@@ -756,7 +756,7 @@
             
             // Get shipment count by checking row 2 (Shipment names)
             let shipmentCount = 0;
-            for (let col = 2; col < 50; col++) { // Check columns C to AX
+            for (let col = 2; col < 102; col++) { // Check columns C to AX
                 const cellAddr = XLSX.utils.encode_cell({ r: 1, c: col });
                 if (detailsSheet[cellAddr] && detailsSheet[cellAddr].v) {
                     shipmentCount++;
@@ -977,7 +977,7 @@
             // Now update the sheet by clearing shipment columns and setting new values
             rowsToKeep.forEach(({ row, shipmentNum, quantity }) => {
                 // Clear any existing quantities in shipment columns (13-48, columns N-AW)
-                for (let col = 13; col <= 48; col++) {
+                for (let col = 13; col <= 100; col++) {
                     const cellAddr = XLSX.utils.encode_cell({ r: row, c: col });
                     if (itemsSheet[cellAddr]) {
                         delete itemsSheet[cellAddr];
